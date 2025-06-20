@@ -1,0 +1,160 @@
+<!-- templates/result.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fall Detection Results</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 50px;
+        }
+        .container {
+            max-width: 800px;
+        }
+        .result-image {
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .result-video {
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .detection-card {
+            margin-top: 30px;
+        }
+        .fall {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .no-fall {
+            color: #198754;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">Fall Detection Results</h1>
+
+        <!-- templates/result.html changes (only showing the modifications) -->
+        <!-- Add this right after the <h1> tag in the existing file -->
+        {% if selected_model %}
+        <div class="alert alert-info text-center mb-4">
+            Results generated using model: <strong>{{ selected_model }}</strong>
+        </div>
+        {% endif %}
+        
+        {% if is_video %}
+            <!-- Video Results -->
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-header">Original Video</div>
+                        <div class="card-body text-center">
+                            <video src="\static\{{video_file}}" class="result-video" controls></video>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-header">Detection Result</div>
+                        <div class="card-body text-center">
+                            <video src="\static\{{result_file}}" class="result-video" controls></video>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card detection-card">
+                <div class="card-header">Detection Summary</div>
+                <div class="card-body">
+                    {% if results %}
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Detection Type</th>
+                                    <th>Occurrences</th>
+                                    <th>Avg. Confidence</th>
+                                    <th>Max Confidence</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for result in results %}
+                                    <tr>
+                                        <td class="{% if result.name|lower == 'fall' %}fall{% else %}no-fall{% endif %}">
+                                            {{ result.name }}
+                                        </td>
+                                        <td>{{ result.count }}</td>
+                                        <td>{{ result.avg_confidence }}</td>
+                                        <td>{{ result.max_confidence }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p class="text-center">No falls or people detected in the video.</p>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <!-- Image Results -->
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-header">Original Image</div>
+                        <div class="card-body text-center">
+                            <img src="\static\{{image_file}}" class="result-image">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-header">Detection Result</div>
+                        <div class="card-body text-center">
+                            <img src="\static\{{result_file}}" class="result-image">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card detection-card">
+                <div class="card-header">Detection Details</div>
+                <div class="card-body">
+                    {% if results %}
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Detection</th>
+                                    <th>Confidence</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for result in results %}
+                                    <tr>
+                                        <td>{{ loop.index }}</td>
+                                        <td class="{% if result.class|lower == 'fall' %}fall{% else %}no-fall{% endif %}">
+                                            {{ result.class }}
+                                        </td>
+                                        <td>{{ result.confidence }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p class="text-center">No falls or people detected in the image.</p>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+        
+        <div class="text-center mt-4">
+            <a href="{{ url_for('index') }}" class="btn btn-primary">Upload Another File</a>
+        </div>
+    </div>
+</body>
+</html>

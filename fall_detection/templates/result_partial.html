@@ -1,0 +1,136 @@
+<!-- templates/result_partial.html -->
+<h2 class="text-center mb-4">Fall Detection Results</h2>
+
+{% if selected_model %}
+<div class="alert alert-info text-center mb-4">
+    Results generated using model: <strong>{{ selected_model }}</strong>
+    {% if threshold %}
+    <br>
+    <span class="small">Detection threshold: <strong>{{ threshold }}</strong></span>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if is_video %}
+    <!-- Video Results -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">Original Video</div>
+                <div class="card-body text-center">
+                    <video src="/fall_detection/static/{{video_file}}" class="result-video" controls></video>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">Detection Result</div>
+                <div class="card-body text-center">
+                    <video src="/fall_detection/static/{{result_file}}" class="result-video" controls></video>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card detection-card">
+        <div class="card-header">Detection Summary</div>
+        <div class="card-body">
+            {% if results %}
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Detection Type</th>
+                            <th>Occurrences</th>
+                            <th>Avg. Confidence</th>
+                            <th>Max Confidence</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for result in results %}
+                            <tr>
+                                <td class="{% if result.name|lower == 'fall' %}fall{% else %}no-fall{% endif %}">
+                                    {{ result.name }}
+                                </td>
+                                <td>{{ result.count }}</td>
+                                <td>{{ result.avg_confidence }}</td>
+                                <td>{{ result.max_confidence }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="text-center">No falls or people detected in the video.</p>
+            {% endif %}
+        </div>
+    </div>
+{% else %}
+    <!-- Image Results -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">Original Image</div>
+                <div class="card-body text-center">
+                    <img src="/fall_detection/static/{{image_file}}" class="result-image">
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">Detection Result</div>
+                <div class="card-body text-center">
+                    <img src="/fall_detection/static/{{result_file}}" class="result-image">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card detection-card">
+        <div class="card-header">Detection Details</div>
+        <div class="card-body">
+            {% if results %}
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Detection</th>
+                            <th>Confidence</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for result in results %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td class="{% if result.class|lower == 'fall' %}fall{% else %}no-fall{% endif %}">
+                                    {{ result.class }}
+                                </td>
+                                <td>{{ result.confidence }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="text-center">No falls or people detected in the image.</p>
+            {% endif %}
+        </div>
+    </div>
+{% endif %}
+
+<div class="text-center mt-4">
+    <button type="button" class="btn btn-primary" id="reset-btn" onclick="resetDetection()">Upload Another File</button>
+</div>
+
+<script>
+    function resetDetection() {
+        // Hide results container
+        document.getElementById('results-container').style.display = 'none';
+        
+        // Reset form and preview
+        document.getElementById('file-input').value = '';
+        document.getElementById('preview').style.display = 'none';
+        document.getElementById('video-preview').style.display = 'none';
+        document.getElementById('detect-btn').style.display = 'none';
+        
+        // Scroll to top
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+</script>

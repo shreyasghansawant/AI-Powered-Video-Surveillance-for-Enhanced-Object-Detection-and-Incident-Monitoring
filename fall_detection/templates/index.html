@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fall Detection System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            padding-top: 50px;
+            padding-bottom: 50px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 800px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 30px;
+            margin-top: 20px;
+        }
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            margin: 30px 0;
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover {
+            border-color: #007bff;
+            background-color: #f5f9ff;
+        }
+        .upload-area.highlight {
+            border-color: #007bff;
+            background-color: #f5f9ff;
+        }
+        #preview, #video-preview { 
+            max-width: 100%;
+            max-height: 300px;
+            margin-top: 20px;
+            display: none;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .file-type-selector, .model-selector {
+            margin-bottom: 20px;
+        }
+        .result-image, .result-video {
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            background-color: #eee;
+        }
+        .detection-card {
+            margin-top: 30px;
+        }
+        .fall {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .no-fall {
+            color: #198754;
+            font-weight: bold;
+        }
+        #loading-indicator {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .progress-container {
+            margin-top: 15px;
+        }
+        #results-container {
+            display: none;
+            margin-top: 40px;
+        }
+        .threshold-container {
+            margin-bottom: 20px;
+        }
+        .threshold-value {
+            font-weight: bold;
+            color: #007bff;
+        }
+        .page-header {
+            background-color: #fff;
+            padding: 20px 0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .home-btn {
+            margin-right: 15px;
+        }
+        .back-button {
+            margin-bottom: 20px;
+        }
+        .card {
+            border: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .card-title {
+            color: #0d6efd;
+        }
+        .btn-select {
+            background-color: #e9ecef;
+            color: #495057;
+            border: none;
+        }
+        .btn-select:hover {
+            background-color: #ced4da;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Back Button -->
+        <div class="back-button">
+            <a href="/" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Back to Home
+            </a>
+        </div>
+        
+        <h1 class="text-center mb-4">Fall Detection System</h1>
+
+        <div id="alert-container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Upload Media for Fall Detection</h5>
+                <p class="card-text text-muted">Upload an image or video to detect if anyone has fallen.</p>
+
+                <div class="file-type-selector text-center">
+                    <div class="btn-group" role="group" aria-label="File Type Selector">
+                        <button type="button" class="btn btn-outline-primary active" id="image-btn">Image</button>
+                        <button type="button" class="btn btn-outline-primary" id="video-btn">Video</button>
+                    </div>
+                </div>
+
+                <form id="upload-form">
+                    <div class="model-selector mb-3">
+                        <label for="model-select" class="form-label">Select Model:</label>
+                        <select class="form-select" id="model-select" name="model" required>
+                            {% for model in available_models %}
+                                <option value="{{ model }}" {% if loop.first %}selected{% endif %}>{{ model }}</option>
+                            {% else %}
+                                <option value="" disabled>No models found in 'model/' directory.</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Different models may have varying accuracy. Ensure models are in the 'model/' folder.</div>
+                    </div>
+
+                    <!-- Threshold Slider -->
+                    <div class="threshold-container">
+                        <label for="threshold-slider" class="form-label">
+                            Detection Threshold: <span id="threshold-value" class="threshold-value">0.80</span>
+                        </label>
+                        <input type="range" class="form-range" id="threshold-slider" name="threshold" 
+                               min="0.01" max="1" step="0.01" value="0.80">
+                        <div class="form-text">
+                            Higher threshold = fewer but more confident detections. Lower threshold = more detections but may include false positives.
+                        </div>
+                    </div>
+
+                    <div class="upload-area" id="drop-area">
+                        <i class="fas fa-cloud-upload-alt fa-3x mb-3 text-primary"></i>
+                        <p id="upload-text">Click to select or drag and drop an image here</p>
+                        <input type="file" name="file" id="file-input" accept=".jpg,.jpeg,.png" style="display: none;">
+                        <button type="button" class="btn btn-outline-primary" id="select-btn">Select File</button>
+                    </div>
+
+                    <div class="text-center">
+                        <img id="preview" class="img-fluid rounded">
+                        <video id="video-preview" class="img-fluid rounded" controls></video>
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-primary" id="detect-btn" style="display: none;">
+                                <i class="fas fa-search me-2"></i>Detect Falls
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="loading-indicator">
+             <p class="mt-2" id="loading-text">Processing... Please wait.</p>
+             <div class="progress-container">
+                 <div class="progress" role="progressbar" aria-label="Processing Progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="height: 20px">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%" id="progress-bar">0%</div>
+                </div>
+             </div>
+        </div>
+
+        <div id="results-container">
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const dropArea = document.getElementById('drop-area');
+        const fileInput = document.getElementById('file-input');
+        const preview = document.getElementById('preview');
+        const videoPreview = document.getElementById('video-preview');
+        const detectBtn = document.getElementById('detect-btn');
+        const selectBtn = document.getElementById('select-btn');
+        const imageBtn = document.getElementById('image-btn');
+        const videoBtn = document.getElementById('video-btn');
+        const uploadText = document.getElementById('upload-text');
+        const uploadForm = document.getElementById('upload-form');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const loadingText = document.getElementById('loading-text');
+        const resultsContainer = document.getElementById('results-container');
+        const alertContainer = document.getElementById('alert-container');
+        const progressBar = document.getElementById('progress-bar');
+        const thresholdSlider = document.getElementById('threshold-slider');
+        const thresholdValue = document.getElementById('threshold-value');
+
+        let currentFileType = 'image';
+        let progressInterval = null; // Variable to hold the interval ID for polling
+
+        // Initialize threshold to 0.80
+        thresholdSlider.value = 0.80;
+        thresholdValue.textContent = '0.80';
+
+        // Update threshold value display
+        thresholdSlider.addEventListener('input', function() {
+            thresholdValue.textContent = this.value;
+        });
+
+        // --- Helper to clear any existing alerts ---
+        function clearAlerts() {
+            alertContainer.innerHTML = '';
+        }
+
+        // --- Helper to show alerts ---
+        function showAlert(message, type = 'danger') { // Default type is danger
+             clearAlerts(); // Clear previous alerts first
+             const alertDiv = document.createElement('div');
+             alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+             alertDiv.setAttribute('role', 'alert');
+             alertDiv.innerHTML = `
+                 ${message}
+                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+             `;
+             alertContainer.appendChild(alertDiv);
+         }
+
+        selectBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', handleFileSelect);
+
+        // File type selection
+        imageBtn.addEventListener('click', () => switchFileType('image'));
+        videoBtn.addEventListener('click', () => switchFileType('video'));
+
+        function switchFileType(type) {
+            currentFileType = type;
+            clearAlerts(); // Clear alerts on type switch
+            if (type === 'image') {
+                imageBtn.classList.add('active');
+                videoBtn.classList.remove('active');
+                fileInput.accept = '.jpg,.jpeg,.png';
+                uploadText.textContent = 'Click to select or drag and drop an image here';
+            } else {
+                videoBtn.classList.add('active');
+                imageBtn.classList.remove('active');
+                fileInput.accept = '.mp4,.avi,.mov'; // Adjust accepted video types if needed
+                uploadText.textContent = 'Click to select or drag and drop a video here';
+            }
+            resetPreviewAndResults(); // Reset preview and hide results
+        }
+
+        function resetPreviewAndResults() {
+            preview.style.display = 'none';
+            preview.src = ''; // Clear src
+            videoPreview.style.display = 'none';
+            videoPreview.src = ''; // Clear src
+            URL.revokeObjectURL(videoPreview.src); // Revoke previous object URL if any
+            detectBtn.style.display = 'none';
+            fileInput.value = ''; // Clear the selected file
+            resultsContainer.style.display = 'none'; // Hide results
+            resultsContainer.innerHTML = ''; // Clear results content
+            hideLoading(); // Ensure loading indicator is hidden
+        }
+
+        // Handle drag and drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false); // Prevent browser navigating away
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        dropArea.addEventListener('dragenter', () => dropArea.classList.add('highlight'), false);
+        dropArea.addEventListener('dragover', () => dropArea.classList.add('highlight'), false);
+        dropArea.addEventListener('dragleave', () => dropArea.classList.remove('highlight'), false);
+
+        dropArea.addEventListener('drop', (e) => {
+            dropArea.classList.remove('highlight');
+            const dt = e.dataTransfer;
+            const files = dt.files;
+
+            if (files.length) {
+                // Check if dropped file type matches selected type
+                const file = files[0];
+                const isImageType = file.type.match('image.*');
+                const isVideoType = file.type.match('video.*');
+
+                if ((currentFileType === 'image' && !isImageType) || (currentFileType === 'video' && !isVideoType)) {
+                    showAlert(`Please drop a ${currentFileType} file.`);
+                    return;
+                }
+
+                fileInput.files = files; // Assign dropped files to input
+                handleFileSelect();
+            }
+        }, false);
+
+
+        function handleFileSelect() {
+            clearAlerts(); // Clear alerts when a new file is selected
+            if (fileInput.files.length) {
+                const file = fileInput.files[0];
+                resultsContainer.style.display = 'none'; // Hide old results
+                resultsContainer.innerHTML = '';
+
+                if (currentFileType === 'image') {
+                    if (!file.type.match('image.*')) {
+                        showAlert('Invalid file type. Please select an image (jpg, jpeg, png).');
+                        resetPreviewAndResults();
+                        return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        preview.src = e.target.result;
+                        preview.style.display = 'block';
+                        videoPreview.style.display = 'none'; // Hide video preview
+                        detectBtn.style.display = 'inline-block';
+                    };
+                    reader.readAsDataURL(file);
+                } else { // currentFileType === 'video'
+                    if (!file.type.match('video.*')) {
+                        showAlert('Invalid file type. Please select a video (mp4, avi, mov).');
+                         resetPreviewAndResults();
+                        return;
+                    }
+                    // Revoke previous object URL to prevent memory leaks
+                    if (videoPreview.src) {
+                        URL.revokeObjectURL(videoPreview.src);
+                    }
+                    const videoURL = URL.createObjectURL(file);
+                    videoPreview.src = videoURL;
+                    videoPreview.style.display = 'block';
+                    preview.style.display = 'none'; // Hide image preview
+                    detectBtn.style.display = 'inline-block';
+                }
+            } else {
+                // No file selected, reset
+                resetPreviewAndResults();
+            }
+        }
+
+        // --- Show Loading Indicator / Progress ---
+        function showLoading(isVideo = false) {
+            loadingIndicator.style.display = 'block';
+            if (isVideo) {
+                loadingText.textContent = 'Processing video... This may take some time.';
+                progressBar.style.width = '0%';
+                progressBar.textContent = '0%';
+                progressBar.ariaValueNow = '0';
+                document.querySelector('.progress-container').style.display = 'block'; // Show progress bar container
+            } else {
+                loadingText.textContent = 'Processing image...';
+                document.querySelector('.progress-container').style.display = 'none'; // Hide progress bar for images
+            }
+            resultsContainer.style.display = 'none'; // Hide results area
+            detectBtn.disabled = true; // Disable button while processing
+        }
+
+        // --- Hide Loading Indicator ---
+        function hideLoading() {
+            loadingIndicator.style.display = 'none';
+            detectBtn.disabled = false; // Re-enable button
+            // Stop polling if it's running
+            stopProgressPolling();
+        }
+
+        // --- Start Progress Polling ---
+        function startProgressPolling(taskId) {
+            stopProgressPolling(); // Clear any existing interval
+            
+            console.log("Starting progress polling for task:", taskId);
+            
+            progressInterval = setInterval(() => {
+                fetch(`/fall_detection/get_progress/${taskId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log("Progress data:", data); // Add this for debugging
+                        if (data && typeof data.progress !== 'undefined') {
+                            const progress = Math.min(data.progress, 100); // Cap at 100
+                            progressBar.style.width = progress + '%';
+                            progressBar.textContent = progress + '%';
+                            progressBar.setAttribute('aria-valuenow', progress);
+                            
+                            // If processing is complete, hide loading indicator
+                            if (progress >= 100) {
+                                console.log("Processing complete!");
+                                stopProgressPolling();
+                                setTimeout(() => {
+                                    hideLoading();
+                                }, 500); // Short delay to show 100% before hiding
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error during progress polling:', error);
+                        stopProgressPolling();
+                        hideLoading();
+                    });
+            }, 1000); // Poll every 1 second
+        }
+
+        // --- Stop Progress Polling ---
+        function stopProgressPolling() {
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+                console.log("Progress polling stopped."); // Keep for debugging
+            }
+        }
+
+        // Form submission
+        uploadForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            clearAlerts(); // Clear previous alerts
+
+            const modelSelect = document.getElementById('model-select');
+
+            // Validate form
+            if (!fileInput.files.length) {
+                showAlert('Please select a file first.');
+                return;
+            }
+            if (!modelSelect.value) {
+                showAlert('Please select a model.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('model', modelSelect.value);
+            formData.append('threshold', thresholdSlider.value); // Add threshold to form data
+
+            const isVideo = currentFileType === 'video';
+            showLoading(isVideo); // Show indicator (with progress bar if video)
+
+            // AJAX request
+            fetch('/fall_detection/process_detection', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                // Check if response is OK (status 200-299)
+                if (!response.ok) {
+                    // Attempt to parse error JSON from server response body
+                    return response.json().then(errData => {
+                        // If server sent a JSON error message, use it
+                        throw new Error(errData.error || `Server responded with status: ${response.status}`);
+                    }).catch(() => {
+                        // If response body isn't JSON or parsing fails, use status text
+                        throw new Error(`Network response was not ok. Status: ${response.status} ${response.statusText}`);
+                    });
+                }
+                // If response is OK, parse the JSON
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    hideLoading(); // Hide indicator on error
+                    showAlert(data.error); // Show error from server JSON
+                } else if (data.success) {
+                    // If video response contains task_id, start polling for progress
+                    if (data.is_video && data.task_id) {
+                        startProgressPolling(data.task_id);
+                        // For videos, we'll update the UI in the progress polling's completion
+                    } else {
+                        // For images, hide loading immediately
+                        hideLoading();
+                    }
+                    
+                    resultsContainer.innerHTML = data.html;
+                    resultsContainer.style.display = 'block';
+                    // Scroll to results smoothly
+                    resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    hideLoading(); // Hide indicator
+                    // Handle unexpected success=false without error message
+                    showAlert('An unknown error occurred.');
+                }
+            })
+            .catch(error => {
+                hideLoading(); // Hide indicator on error
+                showAlert('Error: ' + error.message);
+                console.error('Fetch Error:', error);
+            });
+        });
+    </script>
+</body>
+</html>
