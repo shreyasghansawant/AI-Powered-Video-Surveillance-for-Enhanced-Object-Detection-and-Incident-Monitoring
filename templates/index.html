@@ -1,56 +1,1236 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Computer Vision Detection Suite</title>
+    <title>Car Accident Detection</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        :root {
+            --primary-color: #3f6ad8;
+            --accent-color: #f9a825;
+            --danger-color: #dc3545;
+            --success-color: #28a745;
+            --dark-bg: #1e293b;
+            --light-bg: #f8f9fa;
+            --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+        }
+        
+        .header-container {
+            background: linear-gradient(135deg, var(--primary-color), #2c3e70);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path fill="rgba(255,255,255,0.03)" d="M10 10L90 10L90 90L10 90Z"/></svg>');
+            opacity: 0.2;
+        }
+        
+        .header-container h1 {
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        
+        .upload-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
         .card {
-            transition: transform 0.3s ease;
-            margin-bottom: 20px;
+            border: none;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s ease;
+            overflow: hidden;
         }
         
         .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
         }
         
-        .card-img-top {
-            height: 200px;
-            object-fit: cover;
+        .card-title {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+        
+        .model-config-card {
+            background-color: #f8fafc;
+            border-left: 4px solid var(--primary-color);
+            margin-top: 1rem;
+        }
+        
+        .advanced-options-toggle {
+            color: var(--primary-color);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            margin-top: 1rem;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .advanced-options {
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+            margin-top: 1rem;
+        }
+        
+        .result-container {
+            margin-top: 30px;
+        }
+        
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            margin: 40px 0;
+            color: var(--primary-color);
+        }
+        
+        .progress-container {
+            margin-top: 20px;
+        }
+        
+        .comparison-view {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            margin-top: 24px;
+        }
+        
+        .comparison-view > div {
+            flex: 1 1 400px;
+        }
+        
+        .comparison-view h5 {
+            margin-bottom: 12px;
+            font-weight: 600;
+            color: var(--dark-bg);
+        }
+        
+        video, img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stats {
+            margin-top: 24px;
+            padding: 16px;
+            background-color: #f8fafc;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .stats h5 {
+            color: var(--primary-color);
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        
+        .stats ul {
+            padding-left: 1.2rem;
+            margin-bottom: 0;
+        }
+        
+        .slider-container {
+            margin-top: 1.5rem;
+        }
+        
+        .form-range::-webkit-slider-thumb {
+            background-color: var(--primary-color);
+        }
+        
+        .form-range::-moz-range-thumb {
+            background-color: var(--primary-color);
+        }
+        
+        .debug-info {
+            margin-top: 16px;
+            font-size: 0.8rem;
+            color: #6c757d;
+            display: none;
+        }
+        
+        .model-details {
+            margin-top: 16px;
+            padding: 16px;
+            background-color: #f8fafc;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            border-left: 4px solid var(--accent-color);
+        }
+        
+        .model-details h6 {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        
+        .model-badge {
+            font-size: 0.75rem;
+            padding: 0.35rem 0.65rem;
+            border-radius: 50rem;
+            background-color: var(--accent-color);
+            color: white;
+            font-weight: 500;
+        }
+        
+        .back-button {
+            margin-bottom: 20px;
+        }
+        
+        .back-button .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0.5rem 1.2rem;
+            border-radius: 50rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            box-shadow: 0 2px 6px rgba(63, 106, 216, 0.3);
+        }
+        
+        .btn-primary:hover {
+            background-color: #345abc;
+            border-color: #345abc;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(63, 106, 216, 0.4);
+        }
+        
+        .confidence-value {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .alert-accident {
+            background-color: #fff5f5;
+            border-color: var(--danger-color);
+            color: #7d1a1a;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(220, 53, 69, 0.2);
+        }
+        
+        .alert-accident strong {
+            font-weight: 700;
+            color: var(--danger-color);
+        }
+        
+        .form-file-upload {
+            position: relative;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            text-align: center;
+            padding: 2rem 1rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s;
+            background-color: rgba(0,0,0,0.01);
+        }
+        
+        .form-file-upload:hover {
+            border-color: var(--primary-color);
+            background-color: rgba(63, 106, 216, 0.02);
+        }
+        
+        .form-file-upload label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .form-file-upload i {
+            font-size: 2rem;
+            color: #aaa;
+            margin-bottom: 0.5rem;
+        }
+        
+        #formFile {
+            opacity: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        
+        .file-info {
+            display: none;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .file-preview {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #f8fafc;
+            padding: 0.5rem;
+            border-radius: 6px;
+            margin-top: 1rem;
+        }
+        
+        .file-icon {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+        
+        .file-details {
+            flex: 1;
+        }
+        
+        .file-name {
+            font-weight: 500;
+            margin-bottom: 0;
+        }
+        
+        .file-size {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        
+        .remove-file {
+            color: #dc3545;
+            cursor: pointer;
+            padding: 0.25rem;
+        }
+        
+        .result-title-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .result-title-container h3 {
+            margin-bottom: 0;
+            margin-right: 0.5rem;
+            font-weight: 600;
+        }
+        
+        .text-danger {
+            color: var(--danger-color) !important;
+        }
+        
+        .text-success {
+            color: var(--success-color) !important;
         }
     </style>
 </head>
 <body>
-    <div class="container mt-5">
-        <h1 class="text-center mb-5">Computer Vision Detection Suite</h1>
-        
-        <div class="row">
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTK-glHgtHR4XH15VM9JbwRAFeK0iMuuqG4xg&s" class="card-img-top" alt="Car Accident Detection">
-                    <div class="card-body">
-                        <h5 class="card-title">Car Accident Detection</h5>
-                        <p class="card-text">Detect car accidents and near misses in images and videos using YOLO-based models.</p>
-                        <a href="/car_accident/" class="btn btn-primary">Go to Car Accident Detection</a>
-                    </div>
+    <div class="header-container">
+        <div class="container">
+            <h1 class="text-center mb-2">Car Accident Detection</h1>
+            <p class="text-center text-white-50 mb-0">Advanced AI-powered video analysis system</p>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="upload-container">
+            <div class="back-button">
+                <a href="/" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left"></i> Back to Home
+                </a>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Upload Media for Analysis</h5>
+                    
+                    <form id="upload-form" enctype="multipart/form-data">
+                        <div class="form-file-upload" id="file-drop-area">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <label for="formFile">Drag &amp; drop files or click to browse</label>
+                            <p class="text-muted small mb-0">Supported formats: JPG, PNG, MP4, AVI, MOV</p>
+                            <input class="form-control" type="file" id="formFile" accept=".jpg,.jpeg,.png,.mp4,.avi,.mov">
+                        </div>
+                        
+                        <div class="file-info" id="file-info">
+                            <div class="file-preview">
+                                <i class="file-icon fas fa-file-video"></i>
+                                <div class="file-details">
+                                    <p class="file-name mb-0" id="selected-file-name">filename.mp4</p>
+                                    <p class="file-size mb-0" id="selected-file-size">0 KB</p>
+                                </div>
+                                <i class="remove-file fas fa-times-circle" id="remove-file"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="card model-config-card mt-4">
+                            <div class="card-body">
+                                <h6 class="mb-3">Detection Model</h6>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <label for="model-version" class="form-label">Model Version</label>
+                                        <select class="form-select form-select-sm" id="model-version">
+                                            <option value="v1" selected>zero - Standard</option>
+                                            <option value="v2">zero(realtime optimized) - Faster detection</option>
+                                            <option value="v3">zeroOne - Enhanced accuracy</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                                                
+                                <div class="slider-container">
+                                    <label for="confidence-slider" class="form-label">Confidence Threshold: <span id="confidence-value" class="confidence-value">0.80</span></label>
+                                    <input type="range" class="form-range" id="confidence-slider" min="0" max="1" step="0.05" value="0.80">
+                                    <small class="text-muted">Higher values = fewer detections but more accurate</small>
+                                </div>
+                                
+                                <div class="mt-3">
+                                    <a class="advanced-options-toggle" id="toggle-advanced">
+                                        <i class="fas fa-cog me-1"></i> Advanced Options
+                                        <i class="fas fa-chevron-down ms-1"></i>
+                                    </a>
+                                    
+                                    <div class="advanced-options" id="advanced-options" style="display:none;">
+                                        <div class="mb-3">
+                                            <label for="model-type" class="form-label">Model Framework</label>
+                                            <select class="form-select form-select-sm" id="model-type">
+                                                <option value="pt" selected>PyTorch</option>
+                                                <option value="onnx">ONNX</option>
+                                            </select>
+                                            <small class="text-muted">PyTorch offers better accuracy, ONNX may be faster on some devices</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="model-details" id="model-details">
+                            <h6>Model Information</h6>
+                            <div id="model-info-content">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p class="mb-2"><strong>Name:</strong> <span id="model-name">zero - YOLOv8n (PyTorch)</span></p>
+                                        <p class="mb-2"><strong>Classes:</strong> <span id="model-classes">Car Accident</span></p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="mb-2"><strong>mAP:</strong> <span id="model-map">0.85</span></p>
+                                        <p class="mb-2"><strong>Precision/Recall:</strong> <span id="model-precision-recall">0.87/0.83</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-search me-2"></i> Analyze Media
+                            </button>
+                        </div>
+                        
+                        <!-- Hidden inputs -->
+                        <input type="hidden" id="confidence-input" name="confidence" value="0.80">
+                        <input type="hidden" id="model-type-input" name="model_type" value="pt">
+                        <input type="hidden" id="model-version-input" name="model_version" value="v1">
+                    </form>
                 </div>
             </div>
             
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <img src="https://files.seeedstudio.com/wiki/Wio_RP2040_mini_Dev_Board-Onboard_Wifi/Wireless-Fall-Detection-Device/fall.jpg" class="card-img-top" alt="Fall Detection">
+            <div class="loading-spinner" id="loading-spinner">
+                <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3 h5" id="processing-message">Processing your media...</p>
+                
+                <div class="progress-container" id="progress-container" style="display: none;">
+                    <div class="progress" style="height: 20px;">
+                        <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                    </div>
+                    <p class="text-center mt-2" id="progress-text">Processing frames...</p>
+                </div>
+            </div>
+            
+            <div class="result-container" id="result-container" style="display: none;">
+                <div class="card">
                     <div class="card-body">
-                        <h5 class="card-title">Fall Detection</h5>
-                        <p class="card-text">Detect falls in images and videos using YOLO-based models for health and safety monitoring.</p>
-                        <a href="/fall_detection/" class="btn btn-primary">Go to Fall Detection</a>
+                        <div class="result-title-container">
+                            <h3>Detection Results</h3>
+                            <span class="badge bg-primary model-badge" id="model-badge">YOLOv8n v1</span>
+                        </div>
+                        <p>Analysis performed with confidence threshold: <span id="result-confidence" class="confidence-value">0.80</span></p>
+                        
+                        <div class="comparison-view" id="image-results" style="display: none;">
+                            <div>
+                                <h5><i class="fas fa-image me-2"></i>Original Image</h5>
+                                <img id="original-image" src="" alt="Original Image">
+                            </div>
+                            <div>
+                                <h5><i class="fas fa-search me-2"></i>Detection Result</h5>
+                                <img id="result-image" src="" alt="Detection Result">
+                            </div>
+                        </div>
+                        
+                        <div class="comparison-view" id="video-results" style="display: none;">
+                            <div>
+                                <h5><i class="fas fa-video me-2"></i>Original Video</h5>
+                                <video id="original-video" controls>
+                                    <source src="" type="">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </div>
+                            <div>
+                                <h5><i class="fas fa-search me-2"></i>Detection Result</h5>
+                                <video id="result-video" controls>
+                                    <source src="" type="">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </div>
+                        </div>
+                        
+                        <div class="stats" id="stats">
+                            <h5><i class="fas fa-chart-bar me-2"></i>Detection Stats</h5>
+                            <div id="stats-content"></div>
+                        </div>
+                        
+                        <div class="stats mt-3" id="result-model-stats">
+                            <h5><i class="fas fa-microchip me-2"></i>Model Information</h5>
+                            <div id="result-model-info"></div>
+                        </div>
+                        
+                        <!-- Debug info for troubleshooting video issues -->
+                        <div class="debug-info mt-4" id="debug-info">
+                            <button class="btn btn-sm btn-outline-secondary mb-2" id="toggle-debug">Show/Hide Debug Info</button>
+                            <div id="debug-content" style="display: none;"></div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadForm = document.getElementById('upload-form');
+            const loadingSpinner = document.getElementById('loading-spinner');
+            const resultContainer = document.getElementById('result-container');
+            const imageResults = document.getElementById('image-results');
+            const videoResults = document.getElementById('video-results');
+            const originalImage = document.getElementById('original-image');
+            const resultImage = document.getElementById('result-image');
+            const originalVideo = document.getElementById('original-video');
+            const resultVideo = document.getElementById('result-video');
+            const progressContainer = document.getElementById('progress-container');
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            const statsContent = document.getElementById('stats-content');
+            const confidenceSlider = document.getElementById('confidence-slider');
+            const confidenceValue = document.getElementById('confidence-value');
+            const confidenceInput = document.getElementById('confidence-input');
+            const resultConfidence = document.getElementById('result-confidence');
+            const debugInfo = document.getElementById('debug-info');
+            const toggleDebug = document.getElementById('toggle-debug');
+            const debugContent = document.getElementById('debug-content');
+            const modelType = document.getElementById('model-type');
+            const modelVersion = document.getElementById('model-version');
+            const modelTypeInput = document.getElementById('model-type-input');
+            const modelVersionInput = document.getElementById('model-version-input');
+            const modelName = document.getElementById('model-name');
+            const modelMap = document.getElementById('model-map');
+            const modelPrecisionRecall = document.getElementById('model-precision-recall');
+            const modelClasses = document.getElementById('model-classes');
+            const modelBadge = document.getElementById('model-badge');
+            const resultModelInfo = document.getElementById('result-model-info');
+            const fileInput = document.getElementById('formFile');
+            const fileInfo = document.getElementById('file-info');
+            const selectedFileName = document.getElementById('selected-file-name');
+            const selectedFileSize = document.getElementById('selected-file-size');
+            const removeFile = document.getElementById('remove-file');
+            const toggleAdvanced = document.getElementById('toggle-advanced');
+            const advancedOptions = document.getElementById('advanced-options');
+            const fileDropArea = document.getElementById('file-drop-area');
+            
+            // Toggle advanced options
+            toggleAdvanced.addEventListener('click', function() {
+                if (advancedOptions.style.display === 'none') {
+                    advancedOptions.style.display = 'block';
+                    toggleAdvanced.querySelector('.fa-chevron-down').classList.replace('fa-chevron-down', 'fa-chevron-up');
+                } else {
+                    advancedOptions.style.display = 'none';
+                    toggleAdvanced.querySelector('.fa-chevron-up').classList.replace('fa-chevron-up', 'fa-chevron-down');
+                }
+            });
+            
+            // File input handling
+            fileInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    showFileInfo(this.files[0]);
+                }
+            });
+            
+            // Remove file button
+            removeFile.addEventListener('click', function() {
+                fileInput.value = '';
+                fileInfo.style.display = 'none';
+            });
+            
+            // Format file size
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+            
+            // Show file info when file is selected
+            function showFileInfo(file) {
+                const fileType = file.type.split('/')[0]; // 'image' or 'video'
+                selectedFileName.textContent = file.name;
+                selectedFileSize.textContent = formatFileSize(file.size);
+                
+                // Update icon based on file type
+                const fileIcon = document.querySelector('.file-icon');
+                if (fileType === 'image') {
+                    fileIcon.className = 'file-icon fas fa-file-image';
+                } else if (fileType === 'video') {
+                    fileIcon.className = 'file-icon fas fa-file-video';
+                } else {
+                    fileIcon.className = 'file-icon fas fa-file';
+                }
+                
+                fileInfo.style.display = 'block';
+            }
+            
+            // Add file drop functionality
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                fileDropArea.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                fileDropArea.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                fileDropArea.addEventListener(eventName, unhighlight, false);
+            });
+            
+            function highlight() {
+                fileDropArea.style.borderColor = '#3f6ad8';
+                fileDropArea.style.backgroundColor = 'rgba(63, 106, 216, 0.05)';
+            }
+            
+            function unhighlight() {
+                fileDropArea.style.borderColor = '#ddd';
+                fileDropArea.style.backgroundColor = 'rgba(0,0,0,0.01)';
+            }
+            
+            fileDropArea.addEventListener('drop', handleDrop, false);
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                
+                if (files && files.length) {
+                    fileInput.files = files;
+                    showFileInfo(files[0]);
+                }
+            }
+            
+            // Model information for each type and version
+            const modelInfo = {
+                'pt': {
+                    'v1': {
+                        'name': 'zero - YOLOv8n (PyTorch)',
+                        'mAP': 0.85,
+                        'precision': 0.87,
+                        'recall': 0.83,
+                        'f1_score': 0.85,
+                        'classes': ['Car Accident']
+                    },
+                    'v2': {
+                        'name': 'zero(realtime optimized) - YOLOv8n (PyTorch)',
+                        'mAP': 0.92,
+                        'precision': 0.94,
+                        'recall': 0.90,
+                        'f1_score': 0.92,
+                        'classes': ['Car Accident', 'Near Miss']
+                    },
+                    'v3': {
+                        'name': 'zeroOne - YOLOv8n (PyTorch)',
+                        'mAP': 0.92,
+                        'precision': 0.94,
+                        'recall': 0.90,
+                        'f1_score': 0.92,
+                        'classes': ['Car Accident', 'Near Miss']
+                    }
+                },
+                'onnx': {
+                    'v1': {
+                        'name': 'YOLOv8n v1 (ONNX)',
+                        'mAP': 0.84,
+                        'precision': 0.86,
+                        'recall': 0.82,
+                        'f1_score': 0.84,
+                        'classes': ['Car Accident']
+                    },
+                    'v2': {
+                        'name': 'YOLOv8m v2 (ONNX)',
+                        'mAP': 0.91,
+                        'precision': 0.93,
+                        'recall': 0.89,
+                        'f1_score': 0.91,
+                        'classes': ['Car Accident', 'Near Miss']
+                    }
+                }
+            };
+            
+            // Show debug info in development
+            debugInfo.style.display = 'block';
+            
+            // Toggle debug info
+            toggleDebug.addEventListener('click', function() {
+                if (debugContent.style.display === 'none') {
+                    debugContent.style.display = 'block';
+                } else {
+                    debugContent.style.display = 'none';
+                }
+            });
+            
+            // Update model information when type or version changes
+            function updateModelInfo() {
+                const type = modelType.value;
+                const version = modelVersion.value;
+                const info = modelInfo[type][version];
+                
+                modelName.textContent = info.name;
+                modelMap.textContent = info.mAP;
+                modelPrecisionRecall.textContent = `${info.precision}/${info.recall}`;
+                modelClasses.textContent = info.classes.join(', ');
+                
+                // Update hidden inputs
+                modelTypeInput.value = type;
+                modelVersionInput.value = version;
+                
+                // Update model badge text
+                const shortName = info.name.split(' ').slice(0, 2).join(' ');
+                modelBadge.textContent = shortName;
+            }
+            
+            // Initialize model info
+            updateModelInfo();
+            
+            // Add event listeners for model selection changes
+            modelType.addEventListener('change', updateModelInfo);
+            modelVersion.addEventListener('change', updateModelInfo);
+            
+            // Update confidence value display when slider is moved
+            confidenceSlider.addEventListener('input', function() {
+                const value = parseFloat(this.value).toFixed(2);
+                confidenceValue.textContent = value;
+                confidenceInput.value = value;
+            });
+
+            uploadForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const fileInput = document.getElementById('formFile');
+                const file = fileInput.files[0];
+                
+                if (!file) {
+                    alert('Please select a file to upload');
+                    return;
+                }
+                
+                // Create FormData object
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('confidence', confidenceInput.value);
+                formData.append('model_type', modelTypeInput.value);
+                formData.append('model_version', modelVersionInput.value);
+                
+                // Show loading spinner
+                loadingSpinner.style.display = 'block';
+                resultContainer.style.display = 'none';
+                
+                // Send file to server
+                fetch('/car_accident/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(`Error: ${data.error}`);
+                        loadingSpinner.style.display = 'none';
+                        return;
+                    }
+                    
+                    // Set result confidence display
+                    resultConfidence.textContent = data.confidence;
+                    
+                    // Update model badge
+                    if (data.model_info && data.model_info.name) {
+                        const shortName = data.model_info.name.split(' ').slice(0, 2).join(' ');
+                        modelBadge.textContent = shortName;
+                    }
+                    
+                    if (data.file_type === 'image') {
+                        // For images, show results immediately
+                        displayImageResults(data);
+                    } else if (data.file_type === 'video') {
+                        // For videos, start polling for progress
+                        progressContainer.style.display = 'block';
+                        pollVideoProgress(data.task_id);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred during upload');
+                    loadingSpinner.style.display = 'none';
+                });
+            });
+            
+            function displayImageResults(data) {
+                // Set image sources
+                originalImage.src = data.original_path + '?t=' + new Date().getTime();
+                resultImage.src = data.result_path + '?t=' + new Date().getTime();
+                
+                // Display image results, hide video results
+                imageResults.style.display = 'flex';
+                videoResults.style.display = 'none';
+                
+                // Display detection stats
+                let statsHTML = '<ul>';
+                if (data.predictions && data.predictions.length > 0) {
+                    statsHTML += `<li>Detected ${data.predictions.length} accident instances</li>`;
+                    
+                    // Add confidence levels
+                    data.predictions.forEach((pred, index) => {
+                        statsHTML += `<li>Detection ${index+1}: Confidence ${(pred.confidence * 100).toFixed(2)}%</li>`;
+                    });
+                } else {
+                    statsHTML += '<li>No accidents detected</li>';
+                }
+                statsHTML += '</ul>';
+                statsContent.innerHTML = statsHTML;
+                
+                // Display model info if available
+                displayModelInfo(data.model_info);
+                
+                // Show results, hide loading
+                resultContainer.style.display = 'block';
+                loadingSpinner.style.display = 'none';
+            }
+            
+            function displayModelInfo(modelInfo) {
+                if (!modelInfo) return;
+                
+                let modelHTML = '<ul>';
+                modelHTML += `<li><strong>Model:</strong> ${modelInfo.name || 'Unknown'}</li>`;
+                
+                if (modelInfo.stats) {
+                    const stats = modelInfo.stats;
+                    modelHTML += `<li><strong>mAP:</strong> ${stats.mAP}</li>`;
+                    modelHTML += `<li><strong>Precision:</strong> ${stats.precision}</li>`;
+                    modelHTML += `<li><strong>Recall:</strong> ${stats.recall}</li>`;
+                    modelHTML += `<li><strong>Classes:</strong> ${stats.classes.join(', ')}</li>`;
+                    modelHTML += `<li><strong>Inference Time:</strong> ${stats.inference_time}</li>`;
+                }
+                
+                modelHTML += '</ul>';
+                resultModelInfo.innerHTML = modelHTML;
+            }
+            // Add this code inside the existing DOMContentLoaded event listener
+
+            // Function to handle video processing and display
+            function handleVideoProcessing(data) {
+                // Show progress container for video processing
+                progressContainer.style.display = 'block';
+                document.getElementById('processing-message').textContent = 'Processing video frames...';
+                
+                // Start polling for video processing progress
+                pollVideoProgress(data.task_id);
+            }
+
+            /* Enhanced pollVideoProgress function
+            function pollVideoProgress(taskId) {
+                let attempts = 0;
+                const maxAttempts = 300; // 5 minutes timeout (300 attempts * 1 second)
+                const processingMessage = document.getElementById('processing-message');
+                
+                const checkStatus = setInterval(() => {
+                    attempts++;
+                    if (attempts > maxAttempts) {
+                        clearInterval(checkStatus);
+                        processingMessage.textContent = 'Processing timed out. Please try again.';
+                        return;
+                    }
+                    
+                    fetch(`/car_accident/check_status/${taskId}`)
+                        .then(response => {
+                            if (!response.ok) throw new Error('Network response was not ok');
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.error) {
+                                clearInterval(checkStatus);
+                                showError(data.error);
+                                return;
+                            }
+                            
+                            // Update progress information
+                            updateProgress(data);
+                            
+                            // Handle completion
+                            if (data.status === 'completed') {
+                                clearInterval(checkStatus);
+                                fetchVideoResults(taskId);
+                            } else if (data.status === 'error') {
+                                clearInterval(checkStatus);
+                                showError(data.message || 'Error processing video');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error checking status:', error);
+                            if (attempts >= maxAttempts) {
+                                clearInterval(checkStatus);
+                                showError('Failed to get processing status. Please try again later.');
+                            }
+                        });
+                }, 1000); // Check every second
+            }*/
+
+            function pollVideoProgress(taskId) {
+                const checkStatus = setInterval(() => {
+                    fetch(`/car_accident/check_status/${taskId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.error) {
+                                clearInterval(checkStatus);
+                                alert(`Error: ${data.error}`);
+                                loadingSpinner.style.display = 'none';
+                                return;
+                            }
+                            
+                            // Update progress bar
+                            progressBar.style.width = `${data.progress}%`;
+                            progressBar.setAttribute('aria-valuenow', data.progress);
+                            progressBar.textContent = `${data.progress}%`;
+                            
+                            if (data.status === 'completed') {
+                                clearInterval(checkStatus);
+                                fetchVideoResults(taskId);
+                            } else if (data.status === 'error') {
+                                clearInterval(checkStatus);
+                                alert(`Error processing video: ${data.message}`);
+                                loadingSpinner.style.display = 'none';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error checking status:', error);
+                            clearInterval(checkStatus);
+                            loadingSpinner.style.display = 'none';
+                        });
+                }, 1000); // Check every second
+            }
+
+
+            function updateProgress(data) {
+                // Update progress bar
+                const progress = data.progress || 0;
+                progressBar.style.width = `${progress}%`;
+                progressBar.setAttribute('aria-valuenow', progress);
+                progressBar.textContent = `${progress}%`;
+                
+                // Update progress text with more detailed information if available
+                let progressText = 'Processing frames...';
+                if (data.current_frame && data.total_frames) {
+                    progressText = `Processing frame ${data.current_frame} of ${data.total_frames}`;
+                }
+                if (data.processing_speed) {
+                    progressText += ` (${data.processing_speed} fps)`;
+                }
+                progressText.textContent = progressText;
+            }
+
+            function fetchVideoResults(taskId) {
+                fetch(`/car_accident/results/${taskId}`)
+                    .then(response => {
+                        if (!response.ok) throw new Error('Failed to fetch results');
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.error) {
+                            showError(data.error);
+                            return;
+                        }
+                        
+                        // Prepare video elements
+                        prepareVideoElements(data);
+                        
+                        // Display results
+                        displayVideoResults(data);
+                        
+                        // Hide loading spinner and show results
+                        loadingSpinner.style.display = 'none';
+                        resultContainer.style.display = 'block';
+                    })
+                    .catch(error => {
+                        console.error('Error fetching results:', error);
+                        showError('Failed to load results. Please try again.');
+                    });
+            }
+
+            function prepareVideoElements(data) {
+                // Helper function to get MIME type from file extension
+                const getMimeType = (path) => {
+                    const ext = path.split('.').pop().toLowerCase();
+                    const mimeTypes = {
+                        'mp4': 'video/mp4',
+                        'avi': 'video/x-msvideo',
+                        'mov': 'video/quicktime',
+                        'webm': 'video/webm'
+                    };
+                    return mimeTypes[ext] || 'video/mp4';
+                };
+                
+                // Add cache-busting timestamp to URLs
+                const timestamp = new Date().getTime();
+                const originalUrl = `${data.original_path}?t=${timestamp}`;
+                const resultUrl = `${data.result_path}?t=${timestamp}`;
+                
+                // Clear existing video sources
+                originalVideo.innerHTML = '';
+                resultVideo.innerHTML = '';
+                
+                // Create new source elements
+                const originalSource = document.createElement('source');
+                originalSource.src = originalUrl;
+                originalSource.type = getMimeType(data.original_path);
+                
+                const resultSource = document.createElement('source');
+                resultSource.src = resultUrl;
+                resultSource.type = getMimeType(data.result_path);
+                
+                // Append sources to video elements
+                originalVideo.appendChild(originalSource);
+                resultVideo.appendChild(resultSource);
+                
+                // Add error handling
+                originalVideo.onerror = () => console.error('Error loading original video');
+                resultVideo.onerror = () => console.error('Error loading result video');
+                
+                // Add loading indicators
+                originalVideo.onwaiting = () => console.log('Original video buffering...');
+                resultVideo.onwaiting = () => console.log('Result video buffering...');
+                
+                // Try to autoplay when ready
+                originalVideo.oncanplay = () => {
+                    originalVideo.play().catch(e => console.log('Autoplay prevented:', e));
+                };
+                resultVideo.oncanplay = () => {
+                    resultVideo.play().catch(e => console.log('Autoplay prevented:', e));
+                };
+            }
+
+            function displayVideoResults(data) {
+                // Show video results container
+                videoResults.style.display = 'flex';
+                imageResults.style.display = 'none';
+                
+                // Update result confidence
+                resultConfidence.textContent = data.confidence || '0.80';
+                
+                // Update model badge
+                if (data.model_info?.name) {
+                    const shortName = data.model_info.name.split(' ').slice(0, 2).join(' ');
+                    modelBadge.textContent = shortName;
+                }
+                
+                // Create stats HTML
+                let statsHTML = '<ul>';
+                
+                // Add basic processing info
+                statsHTML += `<li>Processed ${data.processed_frames || 0}/${data.total_frames || 0} frames</li>`;
+                
+                if (data.skipped_frames) {
+                    statsHTML += `<li>Skipped ${data.skipped_frames} frames for performance</li>`;
+                }
+                
+                // Add processing time if available
+                if (data.processing_time) {
+                    statsHTML += `<li>Processing time: ${data.processing_time.toFixed(2)} seconds</li>`;
+                }
+                
+                // Add accident detection information
+                if (data.accident_detected) {
+                    statsHTML += `<li class="text-danger fw-bold">Accident Status: ${data.accident_severity || 'Severe'} accident detected</li>`;
+                    
+                    if (data.confidence) {
+                        statsHTML += `<li>Detection Confidence: ${(data.confidence * 100).toFixed(1)}%</li>`;
+                    }
+                    
+                    if (data.accident_frames) {
+                        const percentage = ((data.accident_frames / data.processed_frames) * 100).toFixed(1);
+                        statsHTML += `<li>Frames with accidents: ${data.accident_frames} (${percentage}%)</li>`;
+                    }
+                    
+                    if (data.first_detection_frame) {
+                        statsHTML += `<li>First detection at frame: ${data.first_detection_frame}</li>`;
+                    }
+                    
+                    if (data.first_detection_time) {
+                        statsHTML += `<li>First detection at: ${data.first_detection_time}</li>`;
+                    }
+                } else {
+                    statsHTML += '<li class="text-success fw-bold">Accident Status: No accident detected</li>';
+                }
+                
+                statsHTML += '</ul>';
+                statsContent.innerHTML = statsHTML;
+                
+                // Display model info if available
+                if (data.model_info) {
+                    displayModelInfo(data.model_info);
+                }
+                
+                // Create accident alert if detected
+                if (data.accident_detected) {
+                    createAccidentAlert(data);
+                }
+            }
+
+            function createAccidentAlert(data) {
+                // Remove any existing alerts
+                document.querySelectorAll('.alert').forEach(alert => alert.remove());
+                
+                // Create alert element
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-accident alert-dismissible fade show mt-3';
+                alertDiv.role = 'alert';
+                
+                let alertContent = `<strong><i class="fas fa-exclamation-triangle me-2"></i>ACCIDENT DETECTED!</strong> `;
+                alertContent += `${data.accident_severity || 'Severe'} accident detected with `;
+                alertContent += `${(data.confidence * 100).toFixed(1)}% confidence.`;
+                
+                if (data.first_detection_time) {
+                    alertContent += ` First detected at ${data.first_detection_time}.`;
+                }
+                
+                alertDiv.innerHTML = `
+                    ${alertContent}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                `;
+                
+                // Insert alert before stats
+                statsContent.parentNode.insertBefore(alertDiv, statsContent);
+                
+                // Add notification if supported
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    new Notification('Accident Detected', {
+                        body: `${data.accident_severity} accident detected in video`,
+                        icon: '/static/alert-icon.png'
+                    });
+                }
+            }
+
+            function showError(message) {
+                loadingSpinner.style.display = 'none';
+                
+                // Create error alert
+                const errorAlert = document.createElement('div');
+                errorAlert.className = 'alert alert-danger mt-3';
+                errorAlert.textContent = message;
+                
+                // Insert error alert
+                const uploadCard = document.querySelector('.upload-container .card');
+                uploadCard.appendChild(errorAlert);
+                
+                // Scroll to error
+                errorAlert.scrollIntoView({ behavior: 'smooth' });
+            }
+
+            // Modify the existing upload form submit handler to use the new video handling
+            uploadForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const fileInput = document.getElementById('formFile');
+                const file = fileInput.files[0];
+                
+                if (!file) {
+                    showError('Please select a file to upload');
+                    return;
+                }
+                
+                // Show loading spinner
+                loadingSpinner.style.display = 'block';
+                resultContainer.style.display = 'none';
+                
+                // Create FormData
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('confidence', confidenceInput.value);
+                formData.append('model_type', modelTypeInput.value);
+                formData.append('model_version', modelVersionInput.value);
+                
+                // Determine file type
+                const fileType = file.type.split('/')[0];
+                
+                // Send to server
+                fetch('/car_accident/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('Upload failed');
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        showError(data.error);
+                        return;
+                    }
+                    
+                    // Handle based on file type
+                    if (fileType === 'image') {
+                        displayImageResults(data);
+                    } else if (fileType === 'video') {
+                        handleVideoProcessing(data);
+                    } else {
+                        showError('Unsupported file type');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showError('Upload failed. Please try again.');
+                });
+            });
+        });
+    </script>
     
+    <!-- Add Bootstrap JS bundle for alerts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
